@@ -7,39 +7,38 @@ from torchvision import transforms
 
 class ImageDataset(Dataset):
     # ⭐ __init__에 마스크 디렉토리 경로 추가
-    def __init__(self, img_dir, mask_dir, transform=None, mask_transform=None, accelerator=None):
+    def __init__(self, img_dir, mask_dir, list_file_path, img_transform=None, mask_transform=None):
         self.img_paths = [] # 기존과 동일
+        self.mask_paths = []
         self.mask_dir = mask_dir # ⭐ 마스크 폴더 경로 저장
         self.image_dir = img_dir # 이미지 폴더 경로 저장
         
-        valid_paths = []
-        for img_path in self.img_paths:
-            base_filename = os.path.basename(img_path)
-            filename_without_ext = os.path.splitext(base_filename)[0]
-            expected_mask_path = os.path.join(self.mask_dir, os.path.relpath(img_path, img_dir)).replace(base_filename, f"{filename_without_ext}_mask.png")
-            if os.path.exists(expected_mask_path):
-                valid_paths.append(img_path)
-        
-        self.img_paths = valid_paths
-        if accelerator and accelerator.is_main_process:
-            print(f"Found {len(self.img_paths)} images with corresponding masks.")
+        with open(list_file_path, 'r') as f:
+            lines = f.readlines()
+            
+            for line in lines:
+                img_path = line.strip()
+                
+                if os.path.exists(os.path.join(img_dir, img_path)):
+                    self.img_paths.append(os.path.join(img_dir, img_path))
+                    self.mask_paths.append(os.path.join(mask_dir, img_path.replace('.tif', '_mask.png')))
 
-        self.transform = transform
-        self.mask_transform = mask_transform # ⭐ 마스크용 transform 추가
-        self.accelerator = accelerator
+        self.img_transform = img_transform
+        self.mask_transform = mask_transform
 
     def __len__(self):
         return len(self.img_paths)
 
     def __getitem__(self, idx):
         img_path = self.img_paths[idx]
+        mask_path = self.mask_paths[idx]
         image = Image.open(img_path).convert('RGB')
-        if self.transform:
-            image = self.transform(image)
+        if self.img_transform:
+            image = self.img_transform(image)
         
-        base_filename = os.path.basename(img_path)
-        filename_without_ext = os.path.splitext(base_filename)[0]
-        mask_path = os.path.join(self.mask_dir, os.path.relpath(img_path, self.image_dir)).replace(base_filename, f"{filename_without_ext}_mask.png")
+        # base_filename = os.path.basename(img_path)
+        # filename_without_ext = os.path.splitext(base_filename)[0]
+        # mask_path = os.path.join(self.mask_dir, os.path.relpath(img_path, self.image_dir)).replace(base_filename, f"{filename_without_ext}_mask.png")
         
         mask = Image.open(mask_path).convert('L')
         if self.mask_transform:
