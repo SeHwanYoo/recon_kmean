@@ -53,7 +53,7 @@ def main():
     NUM_EPOCHS = 100
     RECON_LOSS_WEIGHT = 1.0
     SEG_LOSS_WEIGHT = 0.5
-    CHECKPOINT_DIR = "./checkpoints_cnn"
+    CHECKPOINT_DIR = "/home/users/ntu/sehwan00/scratch/recon_kmean/checkpoints_cnn"
     LOG_DIR = "./logs_cnn"
     SAVE_INTERVAL = 5
     RESUME_FROM_CHECKPOINT = None 
